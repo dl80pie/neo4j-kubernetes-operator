@@ -56,7 +56,7 @@ Completed comprehensive analysis and cleanup of the test structure for the Neo4j
 **Changes:**
 - Removed `test-e2e` target and documentation
 - Removed `test-webhooks` and `test-webhooks-tls` targets
-- Updated `test-no-cluster` to only include `test-unit`
+- Updated `test-no-cluster` to only include `test-unit` (later removed as redundant alias in 2025-08-25)
 - Added comments explaining removal rationale
 
 ## Current Test Structure
