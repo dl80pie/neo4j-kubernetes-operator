@@ -10,9 +10,9 @@ keywords:
   - database
   - operator
   - kubernetes
-home: https://github.com/neo4j-labs/neo4j-kubernetes-operator
+home: https://github.com/neo4j-partners/neo4j-kubernetes-operator
 sources:
-  - https://github.com/neo4j-labs/neo4j-kubernetes-operator
+  - https://github.com/neo4j-partners/neo4j-kubernetes-operator
 maintainers:
   - name: Neo4j Labs
     email: labs@neo4j.com

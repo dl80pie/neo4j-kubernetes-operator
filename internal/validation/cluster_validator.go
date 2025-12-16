@@ -23,8 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	neo4jv1alpha1 "github.com/neo4j-labs/neo4j-kubernetes-operator/api/v1alpha1"
-	"github.com/neo4j-labs/neo4j-kubernetes-operator/internal/resources"
+	neo4jv1alpha1 "github.com/neo4j-partners/neo4j-kubernetes-operator/api/v1alpha1"
+	"github.com/neo4j-partners/neo4j-kubernetes-operator/internal/resources"
 )
 
 // ClusterValidationResult holds validation results including warnings
