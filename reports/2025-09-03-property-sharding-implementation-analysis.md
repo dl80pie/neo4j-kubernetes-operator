@@ -9,7 +9,7 @@
 Neo4j Property Sharding is a new distributed architecture feature that decouples node/relationship properties from the graph structure, storing them in separate "property shards" while maintaining the graph topology in a "graph shard". This analysis examines how to implement Property Sharding support in the Neo4j Kubernetes Operator.
 
 **Key Findings:**
-- Property Sharding requires Neo4j 2025.06+ and Cypher 25
+- Property Sharding requires Neo4j 2025.12+ and Cypher 25
 - Introduces complex multi-database topology with graph shards and property shards
 - Requires significant operator enhancements for topology management, backup coordination, and resource orchestration
 - High implementation complexity due to distributed nature and advanced operational requirements
@@ -144,7 +144,7 @@ Phase: Initializing
         │ Checks:              │ CREATE DATABASE       │ Status:
         │ - Cluster ready      │ products-g000         │ SHOW DATABASES
         │ - Sharding enabled   │ TOPOLOGY 3 PRIMARIES  │ products-g000 = ONLINE
-        │ - Version >=2025.06  │ 2 SECONDARIES WAIT    │
+        │ - Version >=2025.12  │ 2 SECONDARIES WAIT    │
         │                      │                       │
         ▼                       ▼                       ▼
 
@@ -234,7 +234,7 @@ stateDiagram-v2
 ┌─────────────────────┐
 │ Neo4jEnterpriseCluster    PHASE 1: Cluster Preparation
 │ Controller          │ ═════════════════════════════════════════
-│                     │ 1. Validates image version >= 2025.06
+│                     │ 1. Validates image version >= 2025.12
 │ Responsibilities:   │ 2. Applies property sharding config
 │ • Version validation│ 3. Restarts cluster with new settings
 │ • Config management │ 4. Validates sharding readiness
@@ -320,10 +320,10 @@ spec:
       memory: "8Gi"
       cpu: "2000m"
 
-  # Ensure Neo4j 2025.06+ for property sharding
+  # Ensure Neo4j 2025.12+ for property sharding
   image:
     repo: "neo4j"
-    tag: "2025.06-enterprise"  # Minimum version required
+    tag: "2025.12-enterprise"  # Minimum version required
 
 status:
   # Existing status fields...
@@ -464,7 +464,7 @@ CREATE DATABASE `products-g000` TOPOLOGY 3 PRIMARIES 2 SECONDARIES WAIT;
 CREATE DATABASE `products-p000` TOPOLOGY 2 PRIMARIES WAIT;
 CREATE DATABASE `products-p001` TOPOLOGY 2 PRIMARIES WAIT;
 
--- Step 2: Create virtual database combining shards (Neo4j 2025.06+ syntax)
+-- Step 2: Create virtual database combining shards (Neo4j 2025.12+ syntax)
 CREATE SHARDED DATABASE products
 GRAPH SHARD `products-g000`
 PROPERTY SHARDS `products-p000`, `products-p001`;
@@ -827,8 +827,8 @@ rate(neo4j_shard_backup_success[1h]) < 0.95
 ### 7.1 Version Requirements and Validation
 
 **Neo4j Version:**
-- **Minimum**: Neo4j 2025.06.0-enterprise (first version with property sharding support)
-- **Recommended**: Neo4j 2025.08.0+ (includes improved seed URI syntax and stability fixes)
+- **Minimum**: Neo4j 2025.12.0-enterprise (property sharding introduced in 2025.12)
+- **Recommended**: Neo4j 2025.12+ (latest GA release with full property sharding support)
 
 **Critical Implementation Detail: Version Validation**
 ```go
@@ -843,9 +843,9 @@ func (r *Neo4jEnterpriseClusterReconciler) validatePropertyShardingSupport(clust
     }
 
     // Check minimum version requirement
-    minVersion := semver.MustParse("2025.06.0")
+    minVersion := semver.MustParse("2025.12.0")
     if version.LT(minVersion) {
-        return fmt.Errorf("property sharding requires Neo4j 2025.06.0+, got %s", version)
+        return fmt.Errorf("property sharding requires Neo4j 2025.12.0+, got %s", version)
     }
 
     return nil
@@ -853,7 +853,7 @@ func (r *Neo4jEnterpriseClusterReconciler) validatePropertyShardingSupport(clust
 ```
 
 **Version Migration Strategy:**
-- **Cluster Upgrade**: Property sharding can only be enabled AFTER upgrading to 2025.06+
+- **Cluster Upgrade**: Property sharding can only be enabled AFTER upgrading to 2025.12+
 - **Backwards Compatibility**: Clusters without property sharding remain unaffected
 - **Feature Flag**: Property sharding should be gated behind feature flag in initial releases
 
