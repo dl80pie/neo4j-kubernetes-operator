@@ -1,11 +1,11 @@
 # Multi-Stage Dockerfile für Neo4j Enterprise Operator
 # Optimiert für OpenShift mit restricted-v2 SCC Kompatibilität
-# Verwendet Go 1.24 und distroless Base Image
+# Verwendet Red Hat UBI Images für Build und Runtime
 
 # =============================================================================
-# STAGE 1: Build mit Go 1.24 Alpine
+# STAGE 1: Build mit Red Hat UBI9 Go Toolset
 # =============================================================================
-FROM golang:1.24-alpine AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.22 AS builder
 
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
@@ -13,13 +13,16 @@ ARG VERSION=dev
 ARG BUILD_DATE
 ARG VCS_REF
 
+# Wechsel zu root für Installationen
+USER root
+
 # Umgebungsvariablen für reproduzierbare Builds
 ENV CGO_ENABLED=0 \
     GOOS=${TARGETOS} \
     GOARCH=${TARGETARCH}
 
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+# Install build dependencies (ca-certificates bereits in UBI enthalten)
+RUN dnf install -y git tzdata && dnf clean all
 
 WORKDIR /workspace
 
@@ -68,8 +71,8 @@ LABEL io.openshift.tags="neo4j,operator,database,graph" \
       io.k8s.description="Neo4j Enterprise Kubernetes Operator" \
       io.k8s.display-name="Neo4j Operator"
 
-# Copy CA certificates for TLS
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# Copy CA certificates for TLS (UBI verwendet /etc/pki/ca-trust)
+COPY --from=builder /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
 WORKDIR /
