@@ -63,12 +63,12 @@ docker buildx build \
 
 | Stage | Image | Zweck |
 |-------|-------|-------|
-| Build | `golang:1.24-alpine` | Kompilieren des Operators |
+| Build | `registry.access.redhat.com/ubi9/ubi:latest` + Go 1.24 | Red Hat UBI9 mit Go 1.24 |
 | Runtime | `registry.access.redhat.com/ubi9/ubi-micro:latest` | Minimaler Runtime für OpenShift |
 
 ### Features des Images
 
-- **Go 1.24**: Aktuelles Go Release
+- **Go 1.24**: Manuell installiert auf UBI9 (erforderlich laut go.mod)
 - **UBI9 Micro**: Red Hat Universal Base Image - optimiert für OpenShift
 - **Multi-Stage Build**: Optimierte Image-Größe (~50MB statt ~1GB)
 - **Arbitrary UID Support**: Kompatibel mit OpenShift restricted-v2 SCC
