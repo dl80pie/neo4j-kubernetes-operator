@@ -132,16 +132,46 @@ func OperatorUDCPackagingValue() string {
 }
 
 func podSecurityContextForCluster(cluster *neo4jv1alpha1.Neo4jEnterpriseCluster) *corev1.PodSecurityContext {
+	// Wenn PodSecurityContext explizit gesetzt ist, verwende diesen
 	if cluster.Spec.SecurityContext != nil && cluster.Spec.SecurityContext.PodSecurityContext != nil {
 		return cluster.Spec.SecurityContext.PodSecurityContext
 	}
+	
+	// Prüfe ob UBI9-Image verwendet wird (unterstützt arbitrary UID)
+	if strings.Contains(cluster.Spec.Image.Tag, "ubi9") || strings.Contains(cluster.Spec.Image.Tag, "ubi") {
+		// Für UBI9: Keine feste UID setzen - OpenShift weist UID aus namespace range zu
+		return &corev1.PodSecurityContext{
+			RunAsNonRoot: ptr.To(true),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+		}
+	}
+	
+	// Standard: Verwende feste UID 7474 (für nicht-UBI Images)
 	return defaultPodSecurityContext
 }
 
 func containerSecurityContextForCluster(cluster *neo4jv1alpha1.Neo4jEnterpriseCluster) *corev1.SecurityContext {
+	// Wenn ContainerSecurityContext explizit gesetzt ist, verwende diesen
 	if cluster.Spec.SecurityContext != nil && cluster.Spec.SecurityContext.ContainerSecurityContext != nil {
 		return cluster.Spec.SecurityContext.ContainerSecurityContext
 	}
+	
+	// Prüfe ob UBI9-Image verwendet wird (unterstützt arbitrary UID)
+	if strings.Contains(cluster.Spec.Image.Tag, "ubi9") || strings.Contains(cluster.Spec.Image.Tag, "ubi") {
+		// Für UBI9: Keine feste UID setzen - OpenShift weist UID aus namespace range zu
+		return &corev1.SecurityContext{
+			RunAsNonRoot:             ptr.To(true),
+			AllowPrivilegeEscalation: ptr.To(false),
+			ReadOnlyRootFilesystem:   ptr.To(false),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		}
+	}
+	
+	// Standard: Verwende feste UID 7474 (für nicht-UBI Images)
 	return defaultContainerSecurityContext
 }
 

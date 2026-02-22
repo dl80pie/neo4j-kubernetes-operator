@@ -1,18 +1,16 @@
 # Minimaler Neo4j Enterprise Cluster für OpenShift
 # Verwendet 3 Server-Nodes mit Standard-Ressourcen
-apiVersion: neo4j.neo4j.io/v1alpha1
+apiVersion: neo4j.neo4j.com/v1alpha1
 kind: Neo4jEnterpriseCluster
 metadata:
   name: neo4j-cluster
-  namespace: neo4j
+  namespace: neo4j-cluster
 spec:
   # Neo4j Enterprise Image
-  image: neo4j:5.26-enterprise
-  imagePullPolicy: IfNotPresent
-  
-  # Optional: Pull Secret für private Registry
-  # imagePullSecrets:
-  #   - name: harbor-pull-secret
+  image:
+    repo: neo4j
+    tag: "5.26-enterprise"
+    pullPolicy: IfNotPresent
 
   # Cluster Topology - 3 Server Nodes
   topology:
@@ -29,17 +27,19 @@ spec:
 
   # Persistenter Storage
   storage:
-    data:
-      size: 10Gi
-      # Leer lassen für Default StorageClass
-      storageClassName: ""
+    className: "lvms-vg1"  # Standard StorageClass für OpenShift
+    size: "10Gi"
 
   # Authentifizierung
   auth:
-    # Secret mit neo4j Passwort
-    secretName: neo4j-auth
-    # Oder inline (nicht empfohlen für Produktion):
-    # password: "changeme"
+    provider: native
+    adminSecret: neo4j-auth
+
+  # OpenShift-kompatibler Security Context
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
 
   # TLS Konfiguration (optional)
   # tls:
@@ -55,8 +55,9 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: neo4j-auth
-  namespace: neo4j
+  namespace: neo4j-cluster
 type: Opaque
-stringData:
-  # Format: neo4j/<password>
-  NEO4J_AUTH: "neo4j/changeme"
+data:
+  # Base64 encoded: neo4j / changeme
+  username: bmVvNGo=
+  password: Y2hhbmdlbWU=

@@ -1,0 +1,16 @@
+# OpenShift RBAC für Neo4j Cluster
+# Bindet die anyuid SCC an den Neo4j ServiceAccount
+# Erfordert cluster-admin Berechtigungen zum Anwenden
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: neo4j-cluster-anyuid
+  namespace: neo4j-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+subjects:
+- kind: ServiceAccount
+  name: neo4j-cluster-server
+  namespace: neo4j-cluster

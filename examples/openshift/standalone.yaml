@@ -1,14 +1,21 @@
 # Neo4j Enterprise Standalone für OpenShift
 # Single-Node Instanz für Entwicklung/Test
-apiVersion: neo4j.neo4j.io/v1alpha1
+apiVersion: neo4j.neo4j.com/v1alpha1
 kind: Neo4jEnterpriseStandalone
 metadata:
   name: neo4j-standalone
-  namespace: neo4j
+  namespace: neo4j-standalone
 spec:
   # Neo4j Enterprise Image
-  image: neo4j:5.26-enterprise
-  imagePullPolicy: IfNotPresent
+  image:
+    repo: neo4j
+    tag: "5.26-enterprise"
+    pullPolicy: IfNotPresent
+
+  # Persistenter Storage
+  storage:
+    className: ""  # Leer = Default StorageClass
+    size: "10Gi"
 
   # Ressourcen
   resources:
@@ -19,15 +26,10 @@ spec:
       cpu: "2"
       memory: "4Gi"
 
-  # Persistenter Storage
-  storage:
-    data:
-      size: 10Gi
-      storageClassName: ""
-
   # Authentifizierung
   auth:
-    secretName: neo4j-standalone-auth
+    provider: native
+    adminSecret: neo4j-standalone-auth
 
 ---
 # Auth Secret
@@ -35,7 +37,9 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: neo4j-standalone-auth
-  namespace: neo4j
+  namespace: neo4j-cluster
 type: Opaque
-stringData:
-  NEO4J_AUTH: "neo4j/changeme"
+data:
+  # Base64 encoded: neo4j / changeme
+  username: bmVvNGo=
+  password: Y2hhbmdlbWU=

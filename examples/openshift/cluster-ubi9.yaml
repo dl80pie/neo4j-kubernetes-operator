@@ -1,0 +1,60 @@
+# Neo4j Enterprise Cluster mit offiziellem UBI9-Image
+# Verwendet das Red Hat Universal Base Image von Neo4j
+# Bessere OpenShift-Kompatibilität ohne feste UID 7474
+apiVersion: neo4j.neo4j.com/v1alpha1
+kind: Neo4jEnterpriseCluster
+metadata:
+  name: neo4j-cluster-ubi9
+  namespace: neo4j-cluster
+spec:
+  # Neo4j Enterprise UBI9 Image
+  image:
+    repo: neo4j
+    tag: "5.26.0-enterprise-ubi9"
+    pullPolicy: IfNotPresent
+
+  # Cluster Topology - 3 Server Nodes
+  topology:
+    servers: 3
+    
+  # Ressourcen pro Node
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+  # Persistenter Storage
+  storage:
+    className: "lvms-vg1"
+    size: "10Gi"
+
+  # Authentifizierung
+  auth:
+    provider: native
+    adminSecret: neo4j-auth-ubi9
+
+  # OpenShift-kompatibler Security Context (ohne feste UID)
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # TLS deaktiviert für einfaches Setup
+  tls:
+    mode: disabled
+
+---
+# Auth Secret für Neo4j
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neo4j-auth-ubi9
+  namespace: neo4j-cluster
+type: Opaque
+data:
+  # Base64 encoded: neo4j / changeme
+  username: bmVvNGo=
+  password: Y2hhbmdlbWU=

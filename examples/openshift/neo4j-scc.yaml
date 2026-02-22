@@ -1,0 +1,57 @@
+# Custom SecurityContextConstraint für Neo4j
+# Erlaubt die feste UID 7474, die Neo4j erfordert
+# Weniger privilegiert als "anyuid" - nur spezifische UID erlaubt
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: neo4j-scc
+  annotations:
+    kubernetes.io/description: |
+      Custom SCC für Neo4j Enterprise. Erlaubt die feste UID/GID 7474,
+      die für Neo4j-Container erforderlich ist.
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: false
+allowPrivilegedContainer: false
+allowedCapabilities: []
+defaultAddCapabilities: []
+fsGroup:
+  type: MustRunAs
+  ranges:
+    - min: 7474
+      max: 7474
+readOnlyRootFilesystem: false
+requiredDropCapabilities:
+  - ALL
+runAsUser:
+  type: MustRunAs
+  uid: 7474
+seLinuxContext:
+  type: MustRunAs
+seccompProfiles:
+  - runtime/default
+volumes:
+  - configMap
+  - downwardAPI
+  - emptyDir
+  - persistentVolumeClaim
+  - projected
+  - secret
+---
+# RoleBinding für den Custom SCC
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: neo4j-cluster-scc-binding
+  namespace: neo4j-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:neo4j-scc
+subjects:
+- kind: ServiceAccount
+  name: neo4j-cluster-server
+  namespace: neo4j-cluster

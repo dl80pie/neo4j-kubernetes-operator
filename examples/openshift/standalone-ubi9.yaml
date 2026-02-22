@@ -1,0 +1,57 @@
+# Neo4j Enterprise Standalone mit offiziellem UBI9-Image
+# Optimal für OpenShift - nutzt arbitrary UID aus namespace range
+apiVersion: neo4j.neo4j.com/v1alpha1
+kind: Neo4jEnterpriseStandalone
+metadata:
+  name: neo4j-ubi9
+  namespace: neo4j-standalone
+spec:
+  # Neo4j Enterprise UBI9 Image (Red Hat Universal Base Image)
+  # Läuft mit beliebiger UID aus dem OpenShift namespace range
+  image:
+    repo: neo4j
+    tag: "5.26.0-enterprise-ubi9"
+    pullPolicy: IfNotPresent
+
+  # Persistenter Storage
+  storage:
+    className: "lvms-vg1"
+    size: "10Gi"
+
+  # Ressourcen
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+  # Authentifizierung
+  auth:
+    provider: native
+    adminSecret: neo4j-ubi9-auth
+
+  # OpenShift-kompatibler Security Context
+  # Keine feste UID erforderlich - UBI9 unterstützt arbitrary UID
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # TLS deaktiviert
+  tls:
+    mode: disabled
+
+---
+# Auth Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neo4j-ubi9-auth
+  namespace: neo4j-standalone
+type: Opaque
+data:
+  # Base64 encoded: neo4j / changeme
+  username: bmVvNGo=
+  password: Y2hhbmdlbWU=
