@@ -1,0 +1,61 @@
+# Neo4j Enterprise Cluster mit persistentem Storage für OpenShift
+# Produktions-Setup mit separaten Storage-Volumes
+apiVersion: neo4j.neo4j.io/v1alpha1
+kind: Neo4jEnterpriseCluster
+metadata:
+  name: neo4j-prod
+  namespace: neo4j
+spec:
+  image: neo4j:5.26-enterprise
+  imagePullPolicy: IfNotPresent
+
+  # Cluster Topology
+  topology:
+    servers: 3
+
+  # Produktions-Ressourcen
+  resources:
+    requests:
+      cpu: "1"
+      memory: "4Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+
+  # Persistenter Storage mit expliziter StorageClass
+  storage:
+    data:
+      size: 50Gi
+      storageClassName: "managed-premium"  # Anpassen an Ihre StorageClass
+    logs:
+      size: 10Gi
+      storageClassName: "managed-premium"
+
+  # Authentifizierung
+  auth:
+    secretName: neo4j-prod-auth
+
+  # Query Monitoring aktivieren
+  queryMonitoring:
+    enabled: true
+
+  # Pod Placement für HA
+  placement:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/instance: neo4j-prod
+            topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neo4j-prod-auth
+  namespace: neo4j
+type: Opaque
+stringData:
+  NEO4J_AUTH: "neo4j/SecurePassword123!"

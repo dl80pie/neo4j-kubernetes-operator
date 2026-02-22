@@ -1,0 +1,88 @@
+# Multi-Stage Dockerfile für Neo4j Enterprise Operator
+# Optimiert für OpenShift mit restricted-v2 SCC Kompatibilität
+# Verwendet Go 1.24 und distroless Base Image
+
+# =============================================================================
+# STAGE 1: Build mit Go 1.24 Alpine
+# =============================================================================
+FROM golang:1.24-alpine AS builder
+
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+ARG VERSION=dev
+ARG BUILD_DATE
+ARG VCS_REF
+
+# Umgebungsvariablen für reproduzierbare Builds
+ENV CGO_ENABLED=0 \
+    GOOS=${TARGETOS} \
+    GOARCH=${TARGETARCH}
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+WORKDIR /workspace
+
+# Copy the Go Modules manifests (für besseres Layer-Caching)
+COPY go.mod go.mod
+COPY go.sum go.sum
+
+# Download dependencies (separater Layer für Caching)
+RUN go mod download
+
+# Copy the go source
+COPY cmd/ cmd/
+COPY api/ api/
+COPY internal/ internal/
+
+# Build with optimizations
+RUN go build \
+    -a -installsuffix cgo \
+    -ldflags="-w -s -X main.version=${VERSION} -X main.buildDate=${BUILD_DATE} -X main.vcsRef=${VCS_REF}" \
+    -o manager cmd/main.go
+
+# =============================================================================
+# STAGE 2: Runtime mit UBI (Red Hat Universal Base Image) für OpenShift
+# Alternative: distroless für minimale Angriffsfläche
+# =============================================================================
+FROM registry.access.redhat.com/ubi9/ubi-micro:latest AS runtime
+
+# Metadata für bessere Nachvollziehbarkeit
+LABEL org.opencontainers.image.title="Neo4j Enterprise Operator" \
+      org.opencontainers.image.description="Kubernetes Operator für Neo4j Enterprise Cluster (5.26+)" \
+      org.opencontainers.image.source="https://github.com/dl80pie/neo4j-kubernetes-operator" \
+      org.opencontainers.image.vendor="Neo4j Labs" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}"
+
+# Enterprise-only metadata
+LABEL neo4j.edition="enterprise-only" \
+      neo4j.min-version="5.26" \
+      neo4j.community-edition="unsupported" \
+      neo4j.description="This operator only supports Neo4j Enterprise Edition 5.26 and above"
+
+# OpenShift-specific labels
+LABEL io.openshift.tags="neo4j,operator,database,graph" \
+      io.k8s.description="Neo4j Enterprise Kubernetes Operator" \
+      io.k8s.display-name="Neo4j Operator"
+
+# Copy CA certificates for TLS
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+
+WORKDIR /
+
+# Copy the binary
+COPY --from=builder /workspace/manager .
+
+# OpenShift runs containers with arbitrary UIDs
+# Do NOT set a specific USER - OpenShift assigns from namespace range
+# The binary must be executable by any user
+RUN chmod 755 /manager
+
+# For non-OpenShift environments, use nonroot user
+USER 65532:65532
+
+ENTRYPOINT ["/manager"]

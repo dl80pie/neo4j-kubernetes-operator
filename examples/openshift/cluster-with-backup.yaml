@@ -1,0 +1,68 @@
+# Neo4j Enterprise Cluster mit Backup-Konfiguration für OpenShift
+apiVersion: neo4j.neo4j.io/v1alpha1
+kind: Neo4jEnterpriseCluster
+metadata:
+  name: neo4j-backup
+  namespace: neo4j
+spec:
+  image: neo4j:5.26-enterprise
+  imagePullPolicy: IfNotPresent
+
+  topology:
+    servers: 3
+
+  resources:
+    requests:
+      cpu: "1"
+      memory: "4Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+
+  storage:
+    data:
+      size: 50Gi
+      storageClassName: ""
+
+  auth:
+    secretName: neo4j-backup-auth
+
+---
+# Backup Konfiguration
+apiVersion: neo4j.neo4j.io/v1alpha1
+kind: Neo4jBackup
+metadata:
+  name: neo4j-backup-daily
+  namespace: neo4j
+spec:
+  # Referenz zum Cluster
+  clusterRef:
+    name: neo4j-backup
+
+  # Backup Schedule (Cron Format)
+  schedule: "0 2 * * *"  # Täglich um 2:00 Uhr
+
+  # Retention Policy
+  retention:
+    keepLast: 7
+
+  # Backup Storage
+  storage:
+    size: 100Gi
+    storageClassName: ""
+
+  # Optional: S3-kompatibles Storage
+  # s3:
+  #   bucket: neo4j-backups
+  #   endpoint: https://s3.example.com
+  #   secretName: s3-credentials
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neo4j-backup-auth
+  namespace: neo4j
+type: Opaque
+stringData:
+  NEO4J_AUTH: "neo4j/BackupSecure123!"

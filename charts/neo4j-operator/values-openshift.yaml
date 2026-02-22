@@ -1,0 +1,177 @@
+# OpenShift-optimized values for neo4j-operator
+# This configuration is designed to work with OpenShift's Security Context Constraints (SCCs)
+# Compatible with restricted-v2 SCC
+
+replicaCount: 1
+
+image:
+  # ANPASSEN: Ihr internes Registry
+  repository: harbor.pietsch.uk/library/neo4j/neo4j-operator
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# ImagePullSecrets für authentifizierte Registries
+imagePullSecrets:
+  - name: harbor-pull-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Operator deployment mode
+operatorMode: cluster
+
+# Development mode settings
+developmentMode: false
+logLevel: info
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+rbac:
+  create: true
+
+podAnnotations: {}
+
+# OpenShift manages security contexts via SCCs
+# Disable to let OpenShift assign UIDs dynamically from namespace range
+podSecurityContextEnabled: false
+podSecurityContext: {}
+
+# OpenShift-compatible security context
+# Do not set runAsUser - OpenShift assigns UIDs from the namespace range
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8081
+  initialDelaySeconds: 15
+  periodSeconds: 20
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8081
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Metrics configuration
+metrics:
+  enabled: true
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+
+# Leader election configuration
+leaderElection:
+  enabled: true
+  namespace: ""
+
+# Webhook configuration
+webhook:
+  enabled: false
+  port: 9443
+  certManager:
+    enabled: false
+
+# Network Policy
+networkPolicy:
+  enabled: false
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Priority Class - use system-cluster-critical for production
+priorityClassName: ""
+
+# Additional environment variables
+env: []
+
+envFrom: []
+
+volumes: []
+
+volumeMounts: []
+
+# Operator configuration
+config:
+  maxConcurrentReconciles: 1
+  requeueInterval: 30s
+  cacheSyncTimeout: 2m
+  enableWebhooks: false
+
+# Neo4j-specific configuration
+neo4j:
+  # Default Neo4j enterprise image
+  defaultImage: neo4j:5.26-enterprise
+  defaultResources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  defaultStorageSize: "10Gi"
+  # Leave empty to use cluster default StorageClass
+  defaultStorageClass: ""
+
+# Backup configuration defaults
+backup:
+  defaultSchedule: "0 2 * * *"
+  defaultRetention: 7
+  defaultStorageSize: "50Gi"
+
+# TLS configuration
+tls:
+  enabled: false
+  secretName: ""
+
+# OpenShift-spezifische Erweiterungen
+openshift:
+  # SCC Binding für restricted-v2 (automatisch durch OpenShift)
+  sccBinding:
+    enabled: true
+    sccName: restricted-v2
+  
+  # OpenShift Route für externen Zugriff (optional)
+  route:
+    enabled: false
+    host: ""
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+
+extraManifests: []

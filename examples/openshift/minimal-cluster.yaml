@@ -1,0 +1,62 @@
+# Minimaler Neo4j Enterprise Cluster für OpenShift
+# Verwendet 3 Server-Nodes mit Standard-Ressourcen
+apiVersion: neo4j.neo4j.io/v1alpha1
+kind: Neo4jEnterpriseCluster
+metadata:
+  name: neo4j-cluster
+  namespace: neo4j
+spec:
+  # Neo4j Enterprise Image
+  image: neo4j:5.26-enterprise
+  imagePullPolicy: IfNotPresent
+  
+  # Optional: Pull Secret für private Registry
+  # imagePullSecrets:
+  #   - name: harbor-pull-secret
+
+  # Cluster Topology - 3 Server Nodes
+  topology:
+    servers: 3
+    
+  # Ressourcen pro Node
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+  # Persistenter Storage
+  storage:
+    data:
+      size: 10Gi
+      # Leer lassen für Default StorageClass
+      storageClassName: ""
+
+  # Authentifizierung
+  auth:
+    # Secret mit neo4j Passwort
+    secretName: neo4j-auth
+    # Oder inline (nicht empfohlen für Produktion):
+    # password: "changeme"
+
+  # TLS Konfiguration (optional)
+  # tls:
+  #   mode: cert-manager
+  #   certManager:
+  #     issuerRef:
+  #       name: letsencrypt-prod
+  #       kind: ClusterIssuer
+
+---
+# Auth Secret für Neo4j
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neo4j-auth
+  namespace: neo4j
+type: Opaque
+stringData:
+  # Format: neo4j/<password>
+  NEO4J_AUTH: "neo4j/changeme"

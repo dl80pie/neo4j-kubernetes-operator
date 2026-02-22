@@ -1,0 +1,41 @@
+# Neo4j Enterprise Standalone für OpenShift
+# Single-Node Instanz für Entwicklung/Test
+apiVersion: neo4j.neo4j.io/v1alpha1
+kind: Neo4jEnterpriseStandalone
+metadata:
+  name: neo4j-standalone
+  namespace: neo4j
+spec:
+  # Neo4j Enterprise Image
+  image: neo4j:5.26-enterprise
+  imagePullPolicy: IfNotPresent
+
+  # Ressourcen
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+  # Persistenter Storage
+  storage:
+    data:
+      size: 10Gi
+      storageClassName: ""
+
+  # Authentifizierung
+  auth:
+    secretName: neo4j-standalone-auth
+
+---
+# Auth Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neo4j-standalone-auth
+  namespace: neo4j
+type: Opaque
+stringData:
+  NEO4J_AUTH: "neo4j/changeme"
