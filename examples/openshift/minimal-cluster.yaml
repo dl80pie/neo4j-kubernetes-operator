@@ -49,6 +49,11 @@ spec:
   #       name: letsencrypt-prod
   #       kind: ClusterIssuer
 
+  # OpenShift Route für externen Zugriff
+  service:
+    route:
+      enabled: true
+
 ---
 # Auth Secret für Neo4j
 apiVersion: v1

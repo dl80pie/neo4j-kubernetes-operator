@@ -32,6 +32,10 @@ spec:
     provider: native
     adminSecret: neo4j-ubi9-auth
 
+  # OpenShift Route für externen Zugriff
+  route:
+    enabled: true
+
   # OpenShift-kompatibler Security Context
   # Keine feste UID erforderlich - UBI9 unterstützt arbitrary UID
   securityContext:

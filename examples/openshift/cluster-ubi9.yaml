@@ -46,6 +46,17 @@ spec:
   tls:
     mode: disabled
 
+  # OpenShift Route für externen Zugriff
+  service:
+    route:
+      enabled: true
+      # Optional: Hostname (wenn leer, generiert OpenShift einen)
+      # host: neo4j-cluster.apps.your-domain.com
+      # Optional: TLS-Konfiguration
+      # tls:
+      #   termination: edge
+      #   insecureEdgeTerminationPolicy: Redirect
+
 ---
 # Auth Secret für Neo4j
 apiVersion: v1

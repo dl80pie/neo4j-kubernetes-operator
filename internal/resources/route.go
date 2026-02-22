@@ -20,6 +20,24 @@ func buildRoute(name, namespace, serviceName string, labels map[string]string, a
 		targetPort = HTTPPort
 	}
 
+	// Ensure labels and annotations are not nil to avoid DeepCopy panic
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+
+	// Convert to map[string]interface{} for unstructured object
+	labelsMap := make(map[string]interface{}, len(labels))
+	for k, v := range labels {
+		labelsMap[k] = v
+	}
+	annotationsMap := make(map[string]interface{}, len(annotations))
+	for k, v := range annotations {
+		annotationsMap[k] = v
+	}
+
 	route := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "route.openshift.io/v1",
@@ -27,8 +45,8 @@ func buildRoute(name, namespace, serviceName string, labels map[string]string, a
 			"metadata": map[string]interface{}{
 				"name":        name,
 				"namespace":   namespace,
-				"labels":      labels,
-				"annotations": annotations,
+				"labels":      labelsMap,
+				"annotations": annotationsMap,
 			},
 			"spec": map[string]interface{}{
 				"to": map[string]interface{}{
