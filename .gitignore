@@ -98,3 +98,6 @@ integration-test-output.log
 *.log
 logs/*.log
 update-alm-examples
+
+# Go source archives (optional - for offline builds if go-toolset nicht verfügbar)
+# build/go/*.tar.gz

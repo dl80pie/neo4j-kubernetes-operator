@@ -2,13 +2,12 @@
 
 ## Übersicht
 
-Diese Anleitung beschreibt das Bauen des Neo4j Enterprise Operator Docker Images für OpenShift mit Go 1.24.
+Diese Anleitung beschreibt das Bauen des Neo4j Enterprise Operator Docker Images für OpenShift mit Go 1.25.
 
 ## Voraussetzungen
 
 - Docker oder Podman
 - Zugriff auf eine Container Registry (z.B. harbor.pietsch.uk)
-- Go 1.24+ (für lokale Builds optional)
 - kubectl / oc CLI
 
 ## Schneller Build
@@ -63,12 +62,12 @@ docker buildx build \
 
 | Stage | Image | Zweck |
 |-------|-------|-------|
-| Build | `registry.access.redhat.com/ubi9/ubi:latest` + Go 1.24 | Red Hat UBI9 mit Go 1.24 |
+| Build | `registry.access.redhat.com/ubi9/go-toolset:1.25` | Red Hat Go Toolset 1.25 |
 | Runtime | `registry.access.redhat.com/ubi9/ubi-micro:latest` | Minimaler Runtime für OpenShift |
 
 ### Features des Images
 
-- **Go 1.24**: Manuell installiert auf UBI9 (erforderlich laut go.mod)
+- **Go 1.25**: Red Hat Go Toolset (Air-Gapped kompatibel, kein go.dev Zugriff)
 - **UBI9 Micro**: Red Hat Universal Base Image - optimiert für OpenShift
 - **Multi-Stage Build**: Optimierte Image-Größe (~50MB statt ~1GB)
 - **Arbitrary UID Support**: Kompatibel mit OpenShift restricted-v2 SCC

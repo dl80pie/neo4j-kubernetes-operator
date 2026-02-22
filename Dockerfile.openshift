@@ -1,31 +1,30 @@
 # Multi-Stage Dockerfile für Neo4j Enterprise Operator
 # Optimiert für OpenShift mit restricted-v2 SCC Kompatibilität
 # Verwendet Red Hat UBI Images für Build und Runtime
+# Air-Gapped: Verwendet Red Hat go-toolset (kein Internet-Zugriff erforderlich)
 
 # =============================================================================
-# STAGE 1: Build mit Red Hat UBI9 + Go 1.24
+# STAGE 1: Build mit Red Hat Go Toolset 1.25
 # =============================================================================
-# Option A: UBI9 mit manueller Go 1.24 Installation (für Go 1.24 Requirement)
-FROM registry.access.redhat.com/ubi9/ubi:latest AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.25 AS builder
 
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 ARG VERSION=dev
 ARG BUILD_DATE
 ARG VCS_REF
-ARG GO_VERSION=1.24.1
 
-# Install build dependencies
-RUN dnf install -y git ca-certificates tzdata && dnf clean all
+# Wechsel zu root für Installationen
+USER root
 
-# Install Go 1.24
-RUN curl -fsSL https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz | tar -C /usr/local -xzf -
+# Install build dependencies (git und ca-certificates bereits enthalten)
+RUN dnf install -y tzdata && dnf clean all
 
 # Umgebungsvariablen für reproduzierbare Builds
-ENV PATH="/usr/local/go/bin:${PATH}" \
-    CGO_ENABLED=0 \
+ENV CGO_ENABLED=0 \
     GOOS=${TARGETOS} \
-    GOARCH=${TARGETARCH}
+    GOARCH=${TARGETARCH} \
+    GOTOOLCHAIN=local
 
 WORKDIR /workspace
 
