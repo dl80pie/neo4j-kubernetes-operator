@@ -38,7 +38,7 @@ func buildRoute(name, namespace, serviceName string, labels map[string]string, a
 		annotationsMap[k] = v
 	}
 
-	route := &unstructured.Unstructured{
+		route := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "route.openshift.io/v1",
 			"kind":       "Route",
@@ -52,10 +52,10 @@ func buildRoute(name, namespace, serviceName string, labels map[string]string, a
 				"to": map[string]interface{}{
 					"kind":   "Service",
 					"name":   serviceName,
-					"weight": 100,
+					"weight": float64(100),
 				},
 				"port": map[string]interface{}{
-					"targetPort": targetPort,
+					"targetPort": float64(targetPort),
 				},
 				"path": path,
 			},
