@@ -146,7 +146,43 @@ spec:
 
 ## Build- und Deployment-Workflow
 
-### Build-Host (mit Internet):
+### Testing
+
+### Unit-Tests (auf Build-Host)
+
+```bash
+# Alle Unit-Tests
+make test-unit
+
+# Nur Route-bezogene Tests
+make test-unit TESTARGS="-run Route"
+
+# Oder direkt mit go
+go test ./internal/resources/... -v -run "Route"
+go test ./internal/controller/... -v -run "Route"
+```
+
+### Integration-Tests (auf Build-Host mit Kind)
+
+```bash
+# Vollständige Integration-Tests (erstellt Kind-Cluster)
+make test-integration
+
+# Nur OpenShift-spezifische Tests
+make test-integration TEST_ARGS="-run OpenShift"
+```
+
+### Syntax-Check ohne lokales Go
+
+```bash
+# Mit Docker
+docker run --rm -v $(pwd):/app -w /app golang:1.24-alpine sh -c "go build -o /dev/null ./..."
+
+# Oder mit Podman
+podman run --rm -v $(pwd):/app:Z -w /app golang:1.24-alpine sh -c "go build -o /dev/null ./..."
+```
+
+### Build-Prozesst (mit Internet):
 
 ```bash
 # Änderungen committen
