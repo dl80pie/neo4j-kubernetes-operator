@@ -14,11 +14,24 @@ PLATFORMS="${PLATFORMS:-linux/amd64}"
 # Parse command line arguments
 TAG_ARG=""
 PUSH_ARG=""
-for arg in "$@"; do
-    case $arg in
-        --tag=*) TAG_ARG="${arg#*=}" ;;
-        --tag) shift; TAG_ARG="$1" ;;
-        --push) PUSH_ARG="1" ;;
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --tag=*)
+            TAG_ARG="${1#*=}"
+            shift
+            ;;
+        --tag)
+            shift
+            TAG_ARG="$1"
+            shift
+            ;;
+        --push)
+            PUSH_ARG="1"
+            shift
+            ;;
+        *)
+            shift
+            ;;
     esac
 done
 
@@ -63,6 +76,7 @@ ${CONTAINER_RUNTIME} build \
     -f "${DOCKERFILE}" \
     -t "${IMAGE_NAME}:${VERSION}" \
     -t "${IMAGE_NAME}:latest" \
+    --platform="linux/amd64" \
     --build-arg VERSION="${VERSION}" \
     --build-arg BUILD_DATE="${BUILD_DATE}" \
     --build-arg VCS_REF="${VCS_REF}" \
