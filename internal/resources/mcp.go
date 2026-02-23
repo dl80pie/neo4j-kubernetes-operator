@@ -434,14 +434,15 @@ func buildMCPRoute(namespace, name string, labels map[string]string, mcp *neo4jv
 		}
 	}
 
-	servicePort := mcpHTTPPort(mcp)
-	if mcp.HTTP.Service.Port > 0 {
-		servicePort = mcp.HTTP.Service.Port
-	}
-
 	// For OpenShift Routes, targetPort must be the port NAME, not the number
 	// MCP service has port named "mcp"
 	targetPortName := "mcp"
+
+	// The official mcp/neo4j image serves at the fixed path /mcp (not configurable).
+	path := routeSpec.Path
+	if path == "" {
+		path = "/mcp"
+	}
 
 	return buildRoute(
 		fmt.Sprintf("%s-mcp-route", name),
