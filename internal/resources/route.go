@@ -12,12 +12,12 @@ import (
 // buildRoute constructs an OpenShift Route as an unstructured object.
 // It is used by both cluster and standalone controllers to avoid a hard dependency
 // on the OpenShift API types while still reconciling Route resources when available.
-func buildRoute(name, namespace, serviceName string, labels map[string]string, annotations map[string]string, host, path string, targetPort int32, tls *neo4jv1alpha1.RouteTLSSpec) *unstructured.Unstructured {
+func buildRoute(name, namespace, serviceName string, labels map[string]string, annotations map[string]string, host, path string, targetPortName string, tls *neo4jv1alpha1.RouteTLSSpec) *unstructured.Unstructured {
 	if path == "" {
 		path = "/"
 	}
-	if targetPort == 0 {
-		targetPort = HTTPPort
+	if targetPortName == "" {
+		targetPortName = "http"
 	}
 
 	// Ensure labels and annotations are not nil to avoid DeepCopy panic
@@ -55,7 +55,7 @@ func buildRoute(name, namespace, serviceName string, labels map[string]string, a
 					"weight": float64(100),
 				},
 				"port": map[string]interface{}{
-					"targetPort": float64(targetPort),
+					"targetPort": targetPortName,
 				},
 				"path": path,
 			},
@@ -105,9 +105,11 @@ func BuildRouteForEnterprise(cluster *neo4jv1alpha1.Neo4jEnterpriseCluster) *uns
 		annotations[k] = v
 	}
 
-	targetPort := routeSpec.TargetPort
-	if targetPort == 0 {
-		targetPort = HTTPPort
+	// For OpenShift Routes, targetPort must be the port NAME, not the number
+	// The client service has ports named "http" (7474) and "bolt" (7687)
+	targetPortName := "http"
+	if routeSpec.TargetPort == 7687 {
+		targetPortName = "bolt"
 	}
 
 	return buildRoute(
@@ -118,7 +120,7 @@ func BuildRouteForEnterprise(cluster *neo4jv1alpha1.Neo4jEnterpriseCluster) *uns
 		annotations,
 		routeSpec.Host,
 		routeSpec.Path,
-		targetPort,
+		targetPortName,
 		routeSpec.TLS,
 	)
 }
@@ -139,9 +141,10 @@ func BuildRouteForStandalone(standalone *neo4jv1alpha1.Neo4jEnterpriseStandalone
 		annotations[k] = v
 	}
 
-	targetPort := routeSpec.TargetPort
-	if targetPort == 0 {
-		targetPort = 7474
+	// For OpenShift Routes, targetPort must be the port NAME, not the number
+	targetPortName := "http"
+	if routeSpec.TargetPort == 7687 {
+		targetPortName = "bolt"
 	}
 
 	return buildRoute(
@@ -157,7 +160,7 @@ func BuildRouteForStandalone(standalone *neo4jv1alpha1.Neo4jEnterpriseStandalone
 		annotations,
 		routeSpec.Host,
 		routeSpec.Path,
-		targetPort,
+		targetPortName,
 		routeSpec.TLS,
 	)
 }

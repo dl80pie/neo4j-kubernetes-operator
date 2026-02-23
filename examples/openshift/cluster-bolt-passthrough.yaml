@@ -1,0 +1,115 @@
+# Neo4j Enterprise Cluster mit Bolt-Access via Route (Passthrough TLS)
+# Für externen Bolt-Zugriff über OpenShift Route mit TCP-Passthrough
+apiVersion: neo4j.neo4j.com/v1alpha1
+kind: Neo4jEnterpriseCluster
+metadata:
+  name: neo4j-cluster-bolt
+  namespace: neo4j-cluster
+spec:
+  # Neo4j Enterprise UBI9 Image
+  image:
+    repo: neo4j
+    tag: "5.26.0-enterprise-ubi9"
+    pullPolicy: IfNotPresent
+
+  # Cluster Topology - 3 Server Nodes
+  topology:
+    servers: 3
+
+  # Ressourcen pro Node
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "2Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+  # Persistenter Storage
+  storage:
+    className: "lvms-vg1"
+    size: "10Gi"
+    accessMode: ReadWriteOnce
+
+  # Authentifizierung
+  auth:
+    provider: native
+    adminSecret: neo4j-auth-bolt
+
+  # OpenShift-kompatibler Security Context
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+  # TLS: Enabled für interne Kommunikation und externen Bolt
+  tls:
+    mode: cert-manager
+    certManager:
+      issuerRef:
+        name: selfsigned-issuer  # Oder: letsencrypt-prod, vault-issuer, etc.
+        kind: ClusterIssuer
+
+  # OpenShift Route für Bolt mit Passthrough TLS
+  service:
+    route:
+      enabled: true
+      # Optional: Fester Hostname (ansonsten generiert OpenShift einen)
+      # host: bolt-neo4j.apps.your-domain.com
+      # Port muss auf Bolt gesetzt werden
+      targetPort: 7687
+      # TLS Passthrough für Bolt (TCP-Traffic durchleiten)
+      tls:
+        termination: passthrough
+
+---
+# Auth Secret für Neo4j
+apiVersion: v1
+kind: Secret
+metadata:
+  name: neo4j-auth-bolt
+  namespace: neo4j-cluster
+type: Opaque
+data:
+  # Base64 encoded: neo4j / changeme
+  username: bmVvNGo=
+  password: Y2hhbmdlbWU=
+
+---
+# Optional: Zusätzliche Route für HTTP Browser Zugriff (mit Edge TLS)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: neo4j-cluster-bolt-browser
+  namespace: neo4j-cluster
+  annotations:
+    haproxy.router.openshift.io/balance: roundrobin
+spec:
+  host: neo4j-browser.apps.your-domain.com
+  to:
+    kind: Service
+    name: neo4j-cluster-bolt-client
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+---
+# Hinweise zur Verwendung:
+#
+# 1. Prüfe Route nach Deployment:
+#    oc get routes -n neo4j-cluster
+#
+# 2. Bolt-Verbindung über Route (Port 443 wird zu 7687):
+#    cypher-shell -a bolt+s://bolt-neo4j.apps.your-domain.com:443 -u neo4j -p changeme
+#
+# 3. Oder direkt über NodePort (falls Route nicht funktioniert):
+#    oc expose svc neo4j-cluster-bolt-client --name=bolt-nodeport --port=7687 --type=NodePort
+#
+# 4. Browser Zugriff:
+#    https://neo4j-browser.apps.your-domain.com/browser/
+#
+# WICHTIG: Bei 'passthrough' muss das Client-Zertifikat vom Neo4j-Server
+# akzeptiert werden. Bei Self-Signed-Zertifikaten:
+#    cypher-shell -a bolt+s://host --encryption false -u neo4j -p changeme
