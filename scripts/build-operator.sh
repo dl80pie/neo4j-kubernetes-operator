@@ -11,6 +11,22 @@ REGISTRY="${REGISTRY:-harbor.pietsch.uk/library/neo4j}"
 DOCKERFILE="${DOCKERFILE:-Dockerfile.openshift}"
 PLATFORMS="${PLATFORMS:-linux/amd64}"
 
+# Parse command line arguments
+TAG_ARG=""
+PUSH_ARG=""
+for arg in "$@"; do
+    case $arg in
+        --tag=*) TAG_ARG="${arg#*=}" ;;
+        --tag) shift; TAG_ARG="$1" ;;
+        --push) PUSH_ARG="1" ;;
+    esac
+done
+
+# Override VERSION if --tag is provided
+if [[ -n "$TAG_ARG" ]]; then
+    VERSION="$TAG_ARG"
+fi
+
 # Build metadata
 BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 VCS_REF=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -77,7 +93,7 @@ echo "  ${CONTAINER_RUNTIME} push ${REGISTRY}/${IMAGE_NAME}:latest"
 echo ""
 
 # Optional: Push if --push flag is provided
-if [[ "$1" == "--push" ]]; then
+if [[ -n "$PUSH_ARG" ]]; then
     echo -e "${GREEN}Pushing to registry...${NC}"
     ${CONTAINER_RUNTIME} push "${REGISTRY}/${IMAGE_NAME}:${VERSION}"
     ${CONTAINER_RUNTIME} push "${REGISTRY}/${IMAGE_NAME}:latest"

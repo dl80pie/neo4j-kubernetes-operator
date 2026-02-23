@@ -61,7 +61,8 @@ func TestBuildRouteForStandalone(t *testing.T) {
 	// Default path and targetPort
 	g.Expect(spec["path"]).To(Equal("/"))
 	port, _, _ := unstructuredNestedMap(spec, "port")
-	g.Expect(port["targetPort"]).To(Equal(int32(7474)))
+	// OpenShift Routes use port NAME (not number), default is "http"
+	g.Expect(port["targetPort"]).To(Equal("http"))
 }
 
 // unstructuredNestedMap is a helper for tests to retrieve nested maps safely

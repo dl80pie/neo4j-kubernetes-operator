@@ -335,7 +335,7 @@ func TestBuildMCPRouteForCluster_DefaultPath(t *testing.T) {
 
 	metadata, ok := route.Object["metadata"].(map[string]interface{})
 	require.True(t, ok)
-	annotations, ok := metadata["annotations"].(map[string]string)
+	annotations, ok := metadata["annotations"].(map[string]interface{})
 	require.True(t, ok)
 	assert.Equal(t, "annotation", annotations["service"])
 	assert.Equal(t, "annotation", annotations["route"])
@@ -345,9 +345,10 @@ func TestBuildMCPRouteForCluster_DefaultPath(t *testing.T) {
 	// Fixed path /mcp (official image).
 	assert.Equal(t, "/mcp", path)
 
-	targetPort, _, err := unstructured.NestedFieldNoCopy(route.Object, "spec", "port", "targetPort")
+	targetPort, _, err := unstructured.NestedString(route.Object, "spec", "port", "targetPort")
 	require.NoError(t, err)
-	assert.Equal(t, int32(9443), targetPort)
+	// OpenShift Routes use port NAME (not number), MCP service port is named "mcp"
+	assert.Equal(t, "mcp", targetPort)
 }
 
 func baseCluster(name string) *neo4jv1alpha1.Neo4jEnterpriseCluster {
